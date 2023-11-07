@@ -17,6 +17,7 @@ pub fn main() {
   let value_add: Result<String, &'static str> = checked_add(lhs, rhs);
   let value_sub: Result<String, &'static str> = checked_sub(lhs, rhs);
   let value_mul: Result<String, &'static str> = checked_mul(lhs, rhs);
+  let value_compare: Result<bool, &'static str> = compare(lhs, rhs, "gt");
 }
 ```
 

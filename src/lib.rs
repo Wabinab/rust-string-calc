@@ -98,9 +98,10 @@ pub fn checked_mul(lhs: &str, rhs: &str) -> Result<String, &'static str> {
   if res2.is_err() { return Err("RHS is invalid decimal. Please check."); }
 
   let (lhs_u128, rhs_u128, max_decimal) = convert_to_u128(lhs, rhs);
-  let total_decimal = max_decimal.checked_mul(2)
-    .expect("Please report Bug: Failed to multiply total_decimal. ");
-
+  let total_decimal = max_decimal.checked_mul(2);
+  if total_decimal.is_none() { return Err("Please report Bug: Failed to multiply total_decimal. "); }
+  let total_decimal = total_decimal.unwrap();
+  
   let value = lhs_u128.checked_mul(rhs_u128);
   if value.is_none() { return Err("Sorry, u128 add encounters overflow. Please find other methods to add."); }
 
@@ -113,6 +114,43 @@ pub fn checked_mul(lhs: &str, rhs: &str) -> Result<String, &'static str> {
   value_str = value_str.trim_end_matches(".").to_owned();  // if last value is '.', trim. 
 
   return Ok(value_str)
+}
+
+/// Performs comparison between 2 values. 
+/// When failed, it'll return Err(message). Success, Ok(bool). 
+/// 
+/// Available comparator are: "le", "ge", "lt", "gt", "eq" which 
+/// corresponds to "less than equal", "greater than equal", 
+/// "less than", "greater than", and "equal". 
+/// 
+/// The signs are compared to LHS. For example, less than equal would
+/// check if lhs <= rhs. 
+/// 
+/// Example: 
+/// ```
+/// let lhs = "12.35";
+/// let rhs = "17.5";
+/// 
+/// assert!(string_calc::compare(lhs, rhs, "lt").unwrap());
+/// assert!(!string_calc::compare(lhs, rhs, "ge").unwrap());
+/// ```
+pub fn compare(lhs: &str, rhs: &str, 
+  comparator: &str
+) -> Result<bool, &'static str> {
+  let res = check_str(lhs);
+  let res2 = check_str(rhs);
+  if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
+  if res2.is_err() { return Err("RHS is invalid decimal. Please check."); }
+
+  let (lhs_u128, rhs_u128, _) = convert_to_u128(lhs, rhs);
+  match comparator {
+    "le" => return Ok(lhs_u128 <= rhs_u128),
+    "ge" => return Ok(lhs_u128 >= rhs_u128),
+    "lt" => return Ok(lhs_u128 < rhs_u128),
+    "gt" => return Ok(lhs_u128 > rhs_u128),
+    "eq" => return Ok(lhs_u128 == rhs_u128),
+    _ => return Err("Invalid comparator. Choose between le, ge, lt, gt, and eq.")
+  };
 }
 
 
@@ -337,5 +375,45 @@ mod tests {
     fn checked_mul_case_5() {
       let value = checked_mul("6", "meh");
       assert!(value.is_err());
+    }
+
+    #[test]
+    fn check_comparator_le() {
+      assert!(compare("12.5", "17.6", "le").unwrap());
+      assert!(!compare("17.6", "12.5", "le").unwrap());
+      assert!(compare("12.5", "12.5", "le").unwrap());
+    }
+
+    #[test]
+    fn check_comparator_lt() {
+      assert!(compare("12.5", "17.6", "lt").unwrap());
+      assert!(!compare("17.6", "12.5", "lt").unwrap());
+      assert!(!compare("12.5", "12.5", "lt").unwrap());
+    }
+
+    #[test]
+    fn check_comparator_ge() {
+      assert!(!compare("12.5", "17.6", "ge").unwrap());
+      assert!(compare("17.6", "12.5", "ge").unwrap());
+      assert!(compare("12.5", "12.5", "ge").unwrap());
+    }
+
+    #[test]
+    fn check_comparator_gt() {
+      assert!(!compare("12.5", "17.6", "gt").unwrap());
+      assert!(compare("17.6", "12.5", "gt").unwrap());
+      assert!(!compare("12.5", "12.5", "gt").unwrap());
+    }
+
+    #[test]
+    fn check_comparator_eq() {
+      assert!(!compare("12.5", "17.6", "eq").unwrap());
+      assert!(!compare("17.6", "12.5", "eq").unwrap());
+      assert!(compare("12.5", "12.5", "eq").unwrap());
+    }
+
+    #[test]
+    fn check_comparator_wrong() {
+      assert!(compare("12.5", "17.6", "meh").is_err());
     }
 }
