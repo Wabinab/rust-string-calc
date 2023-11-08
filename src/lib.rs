@@ -25,8 +25,12 @@ use std::cmp;
 /// assert_eq!(string_calc::checked_add(lhs, rhs).unwrap(), 
 ///   "364.448".to_owned());
 /// ``` 
-pub fn checked_add(lhs: &str, rhs: &str) -> Result<String, &'static str> {
+pub fn checked_add(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<String, &'static str> {
   // Check for longest decimals. We find the "dot index"
+  let lhs: String = lhs.into();
+  let rhs: String = rhs.into();
+  let lhs: &str = lhs.as_str();
+  let rhs: &str = rhs.as_str(); 
   let res = check_str(lhs);
   let res2 = check_str(rhs);
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
@@ -39,7 +43,12 @@ pub fn checked_add(lhs: &str, rhs: &str) -> Result<String, &'static str> {
 
   // Add back the decimal points. 
   let mut value_str: String = value.unwrap().to_string();
-  if max_decimal != 0 { value_str.insert(value_str.len() - max_decimal, '.') };
+  let insert_loc = value_str.len().checked_sub(max_decimal);
+  if max_decimal != 0 && insert_loc.is_some() { 
+    value_str.insert(insert_loc.unwrap(), '.');
+    value_str = value_str.trim_end_matches('0').to_owned();
+  };
+  value_str = value_str.trim_end_matches(".").to_owned();
 
   return Ok(value_str);
 }
@@ -59,7 +68,12 @@ pub fn checked_add(lhs: &str, rhs: &str) -> Result<String, &'static str> {
 /// assert_eq!(string_calc::checked_sub(lhs, rhs).unwrap(),
 ///   "19.888".to_owned());
 /// ``` 
-pub fn checked_sub(lhs: &str, rhs: &str) -> Result<String, &'static str> {
+pub fn checked_sub(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<String, &'static str> {
+  let lhs: String = lhs.into();
+  let rhs: String = rhs.into();
+  let lhs: &str = lhs.as_str();
+  let rhs: &str = rhs.as_str(); 
+
   let res = check_str(lhs);
   let res2 = check_str(rhs);
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
@@ -72,7 +86,12 @@ pub fn checked_sub(lhs: &str, rhs: &str) -> Result<String, &'static str> {
 
   // Add back the decimal points. 
   let mut value_str: String = value.unwrap().to_string();
-  if max_decimal != 0 { value_str.insert(value_str.len() - max_decimal, '.') };
+  let insert_loc = value_str.len().checked_sub(max_decimal);
+  if max_decimal != 0 && insert_loc.is_some() { 
+    value_str.insert(insert_loc.unwrap(), '.');
+    value_str = value_str.trim_end_matches('0').to_owned();
+  };
+  value_str = value_str.trim_end_matches(".").to_owned();
 
   return Ok(value_str);
 }
@@ -91,7 +110,12 @@ pub fn checked_sub(lhs: &str, rhs: &str) -> Result<String, &'static str> {
 /// assert_eq!(string_calc::checked_mul(lhs, rhs).unwrap(),
 ///   "192.66".to_owned());
 /// ```
-pub fn checked_mul(lhs: &str, rhs: &str) -> Result<String, &'static str> {
+pub fn checked_mul(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<String, &'static str> {
+  let lhs: String = lhs.into();
+  let rhs: String = rhs.into();
+  let lhs: &str = lhs.as_str();
+  let rhs: &str = rhs.as_str(); 
+
   let res = check_str(lhs);
   let res2 = check_str(rhs);
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
@@ -107,8 +131,9 @@ pub fn checked_mul(lhs: &str, rhs: &str) -> Result<String, &'static str> {
 
   // Add back decimal points. 
   let mut value_str: String = value.unwrap().to_string();
-  if total_decimal != 0 { 
-    value_str.insert(value_str.len() - total_decimal, '.');
+  let insert_loc = value_str.len().checked_sub(total_decimal);
+  if total_decimal != 0 && insert_loc.is_some() { 
+    value_str.insert(insert_loc.unwrap(), '.');
     value_str = value_str.trim_end_matches("0").to_owned();
   };
   value_str = value_str.trim_end_matches(".").to_owned();  // if last value is '.', trim. 
@@ -134,9 +159,14 @@ pub fn checked_mul(lhs: &str, rhs: &str) -> Result<String, &'static str> {
 /// assert!(string_calc::compare(lhs, rhs, "lt").unwrap());
 /// assert!(!string_calc::compare(lhs, rhs, "ge").unwrap());
 /// ```
-pub fn compare(lhs: &str, rhs: &str, 
+pub fn compare(lhs: impl Into<String>, rhs: impl Into<String>, 
   comparator: &str
 ) -> Result<bool, &'static str> {
+  let lhs: String = lhs.into();
+  let rhs: String = rhs.into();
+  let lhs: &str = lhs.as_str();
+  let rhs: &str = rhs.as_str(); 
+
   let res = check_str(lhs);
   let res2 = check_str(rhs);
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
@@ -415,5 +445,19 @@ mod tests {
     #[test]
     fn check_comparator_wrong() {
       assert!(compare("12.5", "17.6", "meh").is_err());
+    }
+
+    #[test]
+    fn check_after_minus_no_decimal_no_cause_error() {
+      assert!(checked_sub("12.70", "12.7").is_ok());
+      assert_eq!(checked_sub("25.400", "12.8").unwrap(), "12.6".to_owned());
+      assert!(checked_mul("12.52", "0").is_ok());
+    }
+
+    #[test]
+    fn check_string_works_not_only_str() {
+      assert_eq!(checked_add("12.5".to_owned(), "13.70".to_owned()).unwrap(), "26.2".to_owned());
+      assert_eq!(checked_sub("12.5".to_owned(), "9.62".to_owned()).unwrap(), "2.88".to_owned());
+      assert_eq!(checked_mul("12.5".to_owned(), "7.2".to_owned()).unwrap(), "90".to_owned());
     }
 }
