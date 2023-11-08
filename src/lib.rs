@@ -45,7 +45,9 @@ pub fn checked_add(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<Str
   let mut value_str: String = value.unwrap().to_string();
   let insert_loc = value_str.len().checked_sub(max_decimal);
   if max_decimal != 0 && insert_loc.is_some() { 
-    value_str.insert(insert_loc.unwrap(), '.');
+    let insert_loc = insert_loc.unwrap();
+    value_str.insert(insert_loc, '.');
+    if insert_loc == 0 { value_str.insert(insert_loc, '0'); }
     value_str = value_str.trim_end_matches('0').to_owned();
   };
   value_str = value_str.trim_end_matches(".").to_owned();
@@ -88,7 +90,9 @@ pub fn checked_sub(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<Str
   let mut value_str: String = value.unwrap().to_string();
   let insert_loc = value_str.len().checked_sub(max_decimal);
   if max_decimal != 0 && insert_loc.is_some() { 
-    value_str.insert(insert_loc.unwrap(), '.');
+    let insert_loc = insert_loc.unwrap();
+    value_str.insert(insert_loc, '.');
+    if insert_loc == 0 { value_str.insert(insert_loc, '0'); }
     value_str = value_str.trim_end_matches('0').to_owned();
   };
   value_str = value_str.trim_end_matches(".").to_owned();
@@ -133,7 +137,9 @@ pub fn checked_mul(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<Str
   let mut value_str: String = value.unwrap().to_string();
   let insert_loc = value_str.len().checked_sub(total_decimal);
   if total_decimal != 0 && insert_loc.is_some() { 
-    value_str.insert(insert_loc.unwrap(), '.');
+    let insert_loc = insert_loc.unwrap();
+    value_str.insert(insert_loc, '.');
+    if insert_loc == 0 { value_str.insert(insert_loc, '0'); }
     value_str = value_str.trim_end_matches("0").to_owned();
   };
   value_str = value_str.trim_end_matches(".").to_owned();  // if last value is '.', trim. 
@@ -451,6 +457,8 @@ mod tests {
     fn check_after_minus_no_decimal_no_cause_error() {
       assert!(checked_sub("12.70", "12.7").is_ok());
       assert_eq!(checked_sub("25.400", "12.8").unwrap(), "12.6".to_owned());
+      assert_eq!(checked_sub("12.8", "11.8".to_owned()).unwrap(), "1".to_owned());
+      assert_eq!(checked_sub("12.8", "12.0000").unwrap(), "0.8".to_owned());
       assert!(checked_mul("12.52", "0").is_ok());
     }
 
