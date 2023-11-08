@@ -18,6 +18,13 @@ pub fn main() {
   let value_sub: Result<String, &'static str> = checked_sub(lhs, rhs);
   let value_mul: Result<String, &'static str> = checked_mul(lhs, rhs);
   let value_compare: Result<bool, &'static str> = compare(lhs, rhs, "gt");
+
+  // Negative numbers are also supported. 
+  // And output results can be in negative form.
+  let lhs = "-12.3".to_owned();
+  let rhs = "2.8";
+
+  let value_add1: Result<String, &'static str> = checked_add(lhs, rhs);
 }
 ```
 

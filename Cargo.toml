@@ -1,6 +1,6 @@
 [package]
 name = "string_calc"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "Perform calculations based on String to avoid floating point errors."
 license = "MIT OR Apache-2.0"

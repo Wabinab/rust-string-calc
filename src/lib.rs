@@ -3,7 +3,7 @@
 //! subtraction, and multiplication. It does not support division due to the 
 //! nature of division's ability to generate infinite amount of decimals. 
 //! 
-//! If your calculations have too many decimal points such that it can't fit u128 
+//! If your calculations have too many decimal points such that it can't fit i128 
 //! range AFTER calculation, it'll raise an error. 
 //! If you pass in weird values that's not integer or floats/decimals, it'll raise an error. 
 //! Return result will be Ok(String) which you can call .unwrap() or other methods to get
@@ -36,10 +36,10 @@ pub fn checked_add(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<Str
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
   if res2.is_err() { return Err("RHS is invalid decimal. Please check."); }
 
-  let (lhs_u128, rhs_u128, max_decimal) = convert_to_u128(lhs, rhs);
+  let (lhs_i128, rhs_i128, max_decimal) = convert_to_i128(lhs, rhs);
 
-  let value = lhs_u128.checked_add(rhs_u128);
-  if value.is_none() { return Err("Sorry, u128 add encounters overflow. Please find other methods to add."); }
+  let value = lhs_i128.checked_add(rhs_i128);
+  if value.is_none() { return Err("Sorry, i128 add encounters overflow. Please find other methods to add."); }
 
   // Add back the decimal points. 
   let mut value_str: String = value.unwrap().to_string();
@@ -81,10 +81,10 @@ pub fn checked_sub(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<Str
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
   if res2.is_err() { return Err("RHS is invalid decimal. Please check."); }
 
-  let (lhs_u128, rhs_u128, max_decimal) = convert_to_u128(lhs, rhs);
+  let (lhs_i128, rhs_i128, max_decimal) = convert_to_i128(lhs, rhs);
 
-  let value = lhs_u128.checked_sub(rhs_u128);
-  if value.is_none() { return Err("Sorry, u128 add encounters overflow. Please find other methods to add."); }
+  let value = lhs_i128.checked_sub(rhs_i128);
+  if value.is_none() { return Err("Sorry, i128 add encounters overflow. Please find other methods to add."); }
 
   // Add back the decimal points. 
   let mut value_str: String = value.unwrap().to_string();
@@ -125,13 +125,13 @@ pub fn checked_mul(lhs: impl Into<String>, rhs: impl Into<String>) -> Result<Str
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
   if res2.is_err() { return Err("RHS is invalid decimal. Please check."); }
 
-  let (lhs_u128, rhs_u128, max_decimal) = convert_to_u128(lhs, rhs);
+  let (lhs_i128, rhs_i128, max_decimal) = convert_to_i128(lhs, rhs);
   let total_decimal = max_decimal.checked_mul(2);
   if total_decimal.is_none() { return Err("Please report Bug: Failed to multiply total_decimal. "); }
   let total_decimal = total_decimal.unwrap();
   
-  let value = lhs_u128.checked_mul(rhs_u128);
-  if value.is_none() { return Err("Sorry, u128 add encounters overflow. Please find other methods to add."); }
+  let value = lhs_i128.checked_mul(rhs_i128);
+  if value.is_none() { return Err("Sorry, i128 add encounters overflow. Please find other methods to add."); }
 
   // Add back decimal points. 
   let mut value_str: String = value.unwrap().to_string();
@@ -178,13 +178,13 @@ pub fn compare(lhs: impl Into<String>, rhs: impl Into<String>,
   if res.is_err() { return Err("LHS is invalid decimal. Please check."); }
   if res2.is_err() { return Err("RHS is invalid decimal. Please check."); }
 
-  let (lhs_u128, rhs_u128, _) = convert_to_u128(lhs, rhs);
+  let (lhs_i128, rhs_i128, _) = convert_to_i128(lhs, rhs);
   match comparator {
-    "le" => return Ok(lhs_u128 <= rhs_u128),
-    "ge" => return Ok(lhs_u128 >= rhs_u128),
-    "lt" => return Ok(lhs_u128 < rhs_u128),
-    "gt" => return Ok(lhs_u128 > rhs_u128),
-    "eq" => return Ok(lhs_u128 == rhs_u128),
+    "le" => return Ok(lhs_i128 <= rhs_i128),
+    "ge" => return Ok(lhs_i128 >= rhs_i128),
+    "lt" => return Ok(lhs_i128 < rhs_i128),
+    "gt" => return Ok(lhs_i128 > rhs_i128),
+    "eq" => return Ok(lhs_i128 == rhs_i128),
     _ => return Err("Invalid comparator. Choose between le, ge, lt, gt, and eq.")
   };
 }
@@ -197,7 +197,7 @@ fn check_str(str: &str) -> Result<(), &'static str> {
   let mut dot_count = 0;
   for c in str.chars() {
     if !['0', '1', '2', '3', '4', '5', '6', 
-      '7', '8', '9', '.'].contains(&c) 
+      '7', '8', '9', '.', '-'].contains(&c) 
     {
       return Err("Invalid String. Must be numbers and decimal point only.");
     }
@@ -239,7 +239,8 @@ fn preprocess_value(num: &str, curr_d: usize, max_d: usize) -> String {
   return num_str;
 }
 
-fn convert_to_u128(lhs: &str, rhs: &str) -> (u128, u128, usize) {
+// Changed to i128 to support negative numbers. 
+fn convert_to_i128(lhs: &str, rhs: &str) -> (i128, i128, usize) {
   let lhs_decimals = get_decimal_points(lhs);
   let rhs_decimals = get_decimal_points(rhs);
   let max_decimal = cmp::max(lhs_decimals, rhs_decimals);
@@ -248,10 +249,10 @@ fn convert_to_u128(lhs: &str, rhs: &str) -> (u128, u128, usize) {
   let lhs_int = preprocess_value(lhs, lhs_decimals, max_decimal);
   let rhs_int = preprocess_value(rhs, rhs_decimals, max_decimal);
 
-  let lhs_u128: u128 = lhs_int.parse().unwrap();
-  let rhs_u128: u128 = rhs_int.parse().unwrap();
+  let lhs_i128: i128 = lhs_int.parse().unwrap();
+  let rhs_i128: i128 = rhs_int.parse().unwrap();
 
-  return (lhs_u128, rhs_u128, max_decimal);
+  return (lhs_i128, rhs_i128, max_decimal);
 }
 
 #[cfg(test)]
@@ -467,5 +468,18 @@ mod tests {
       assert_eq!(checked_add("12.5".to_owned(), "13.70".to_owned()).unwrap(), "26.2".to_owned());
       assert_eq!(checked_sub("12.5".to_owned(), "9.62".to_owned()).unwrap(), "2.88".to_owned());
       assert_eq!(checked_mul("12.5".to_owned(), "7.2".to_owned()).unwrap(), "90".to_owned());
+    }
+
+    #[test]
+    fn checked_can_run_negative_numbers() {
+      assert_eq!(checked_sub("12.8", "17.5").unwrap(), "-4.7".to_owned());
+    }
+
+    #[test]
+    fn check_special_case_negative_numbers() {
+      assert_eq!(checked_add("-12.800", "12.8").unwrap(), "0".to_owned());
+      assert_eq!(checked_sub("-12.8", "-12.80").unwrap(), "0".to_owned());
+      assert_eq!(checked_sub("-12.8", "-11.0").unwrap(), "-1.8".to_owned());
+      assert_eq!(checked_add("12.8", "-12.0000").unwrap(), "0.8".to_owned());
     }
 }
