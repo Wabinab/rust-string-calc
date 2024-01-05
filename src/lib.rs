@@ -190,6 +190,53 @@ pub fn compare(lhs: impl Into<String>, rhs: impl Into<String>,
 }
 
 
+/// Sum of all values given a Vec<String> or Vec<str> of valid items; 
+/// 
+/// Example: 
+/// ```
+/// let data: Vec<String> = [100.325, 40.272, 51.23]
+///   .map(|c| c.to_string())
+///   .to_vec();
+/// 
+/// assert_eq!(string_calc::sum(data).unwrap(), "191.827".to_owned());
+/// 
+/// let data2 = vec!["20.0", "17", "28"];
+/// assert_eq!(string_calc::sum(data2).unwrap(), "65".to_owned());
+/// ``` 
+pub fn sum(values: Vec<impl Into<String> + Clone>) -> Result<String, &'static str> {
+  let mut _temp_vals: Vec<String> = Vec::new();
+  // let m = values[3];
+  for i in 0..values.len() {
+    let g: String = values[i].clone().into();
+    _temp_vals.push(g);
+  }
+  // Because g didn't live long enough to convert to .as_str() inside. 
+  let new_values: Vec<&str> = _temp_vals.iter().map(|c| c.as_str()).collect();
+
+  if new_values.iter().any(|c| check_str(*c).is_err()) {
+    // Unfortunately, we didn't check for exact indices where it fails, for now. 
+    return Err("There are values which didn't pass check_str. Please inspect and fix.");
+  }
+
+  let (new_vec, max_decimal) = convert_all_to_i128(new_values);
+
+  let sum_val: i128 = new_vec.iter().sum();
+
+  // Add back the decimal point. 
+  let mut value_str: String = sum_val.to_string();
+  let insert_loc = value_str.len().checked_sub(max_decimal);
+  if max_decimal != 0 && insert_loc.is_some() { 
+    let insert_loc = insert_loc.unwrap();
+    value_str.insert(insert_loc, '.');
+    if insert_loc == 0 { value_str.insert(insert_loc, '0'); }
+    value_str = value_str.trim_end_matches('0').to_owned();
+  };
+  value_str = value_str.trim_end_matches(".").to_owned();
+
+  return Ok(value_str);
+}
+
+
 
 
 // ==========================================================================
@@ -253,6 +300,24 @@ fn convert_to_i128(lhs: &str, rhs: &str) -> (i128, i128, usize) {
   let rhs_i128: i128 = rhs_int.parse().unwrap();
 
   return (lhs_i128, rhs_i128, max_decimal);
+}
+
+// Convert all to i128
+// Unfortunately, can't reduce the iteration cause we need max_decimal first, before
+// we can continue. 
+fn convert_all_to_i128(our_vec: Vec<&str>) -> (Vec<i128>, usize) {
+  let decimals: Vec<usize> = our_vec.iter()
+    .map(|c| get_decimal_points(*c))
+    .collect();
+  let max_decimal: usize = *decimals.iter().max().unwrap();
+
+  let ret_val: Vec<i128> = our_vec.iter().enumerate().map(|(i, c)| {
+    let value = preprocess_value(c, decimals[i], max_decimal);
+    let value_i128 = value.parse().unwrap();
+    value_i128
+  }).collect();
+
+  return (ret_val, max_decimal);
 }
 
 #[cfg(test)]
@@ -481,5 +546,19 @@ mod tests {
       assert_eq!(checked_sub("-12.8", "-12.80").unwrap(), "0".to_owned());
       assert_eq!(checked_sub("-12.8", "-11.0").unwrap(), "-1.8".to_owned());
       assert_eq!(checked_add("12.8", "-12.0000").unwrap(), "0.8".to_owned());
+    }
+
+    #[test]
+    fn check_convert_all_to_i128_works() {
+      let vec: Vec<&str> = vec!["12.368", "1.14", "28"];
+      let (new_vec, max_decimal) = convert_all_to_i128(vec);
+      assert_eq!(new_vec, vec![12368, 1140, 28000]);
+      assert_eq!(max_decimal, 3);
+    }
+
+    #[test]
+    fn check_sum_all_with_negative_numbers() {
+      let vec = vec!["-12.42", "3.87", "2.323"];
+      assert_eq!(sum(vec).unwrap(), "-6.227".to_owned());
     }
 }

@@ -25,6 +25,10 @@ pub fn main() {
   let rhs = "2.8";
 
   let value_add1: Result<String, &'static str> = checked_add(lhs, rhs);
+
+  // And if you want to sum an array/vector
+  let our_vec = vec!["12.432", "18.37", "21"];
+  let sum_of_our_vec: Result<String, &'static str> = sum(our_vec);
 }
 ```
 
